@@ -2,32 +2,35 @@ import SwiftUI
 
 struct CategoriesView: View {
     @State private var categories: [Category] = []
+    @State private var isLoading = true
+    @State private var errorMessage: String?
     
     var body: some View {
         NavigationStack {
-            List(categories) { category in
-                NavigationLink(category.name) {
-                    CategoryPlacesView(category: category)
+            Group {
+                if isLoading {
+                    ProgressView("Caricamento...")
+                } else if let errorMessage {
+                    ContentUnavailableView("Errore", systemImage: "exclamationmark.triangle", description: Text(errorMessage))
+                } else if categories.isEmpty {
+                    ContentUnavailableView("Nessuna categoria", systemImage: "folder")
+                } else {
+                    List(categories) { category in
+                        NavigationLink(category.name) {
+                            Text("Luoghi in \(category.name)")
+                        }
+                    }
                 }
             }
             .navigationTitle("Categorie")
             .task {
-                // categories = try? await APIClient.shared.fetchCategories()
+                do {
+                    categories = try await APIClient.shared.fetchCategories()
+                } catch {
+                    errorMessage = error.localizedDescription
+                }
+                isLoading = false
             }
         }
-    }
-}
-
-struct CategoryPlacesView: View {
-    let category: Category
-    @State private var places: [Place] = []
-    
-    var body: some View {
-        List(places) { place in
-            NavigationLink(place.name) {
-                PlaceDetailView(place: place)
-            }
-        }
-        .navigationTitle(category.name)
     }
 }

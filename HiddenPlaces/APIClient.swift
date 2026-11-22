@@ -4,13 +4,19 @@ class APIClient {
     static let shared = APIClient()
     private let baseURL = "https://imolaccio.it/sourcedrop/api/"
     
+    func fetchCategories() async throws -> [Category] {
+        let url = URL(string: baseURL + "categories.php")!
+        let (data, _) = try await URLSession.shared.data(from: url)
+        return try JSONDecoder().decode([Category].self, from: data)
+    }
+    
     func fetchPlaces(categoryId: Int? = nil) async throws -> [Place] {
         var components = URLComponents(string: baseURL + "places_with_ads.php")!
         if let categoryId {
             components.queryItems = [URLQueryItem(name: "category_id", value: "\(categoryId)")]
         }
-        let (_, _) = try await URLSession.shared.data(from: components.url!)
-        return []
+        let (data, _) = try await URLSession.shared.data(from: components.url!)
+        return try JSONDecoder().decode([Place].self, from: data)
     }
     
     func createPlace(name: String, description: String, history: String, categoryId: Int, latitude: Double?, longitude: Double?) async throws {
