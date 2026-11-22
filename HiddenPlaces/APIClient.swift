@@ -19,6 +19,12 @@ class APIClient {
         return try JSONDecoder().decode([Place].self, from: data)
     }
     
+    func fetchPhotos() async throws -> [PhotoItem] {
+        let url = URL(string: baseURL + "photos.php")!
+        let (data, _) = try await URLSession.shared.data(from: url)
+        return try JSONDecoder().decode([PhotoItem].self, from: data)
+    }
+    
     func createPlace(name: String, description: String, history: String, categoryId: Int, latitude: Double?, longitude: Double?) async throws {
         let url = URL(string: baseURL + "sources.php")!
         var request = URLRequest(url: url)

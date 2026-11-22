@@ -46,23 +46,17 @@ struct HomeView: View {
     
     func loadPhotos() async {
         do {
-            let url = URL(string: "https://imolaccio.it/sourcedrop/api/photos.php")!
-            let (data, _) = try await URLSession.shared.data(from: url)
-            let result = try JSONDecoder().decode([PhotoItem].self, from: data)
+            let result = try await APIClient.shared.fetchPhotos()
             photos = result.map { $0.url }
         } catch {
-            // Fallback se non ci sono foto
             photos = [
                 "https://picsum.photos/400/300?1",
                 "https://picsum.photos/400/300?2",
-                "https://picsum.photos/400/300?3"
+                "https://picsum.photos/400/300?3",
+                "https://picsum.photos/400/300?4"
             ]
         }
     }
-}
-
-struct PhotoItem: Codable {
-    let url: String
 }
 
 struct ScrollingTilesView: View {

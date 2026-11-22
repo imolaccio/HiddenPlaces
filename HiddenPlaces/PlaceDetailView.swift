@@ -37,8 +37,8 @@ struct PlaceDetailView: View {
                     .cornerRadius(12)
                 }
                 
-                if let analyses = place.analyses, !analyses.isEmpty {
-                    AnalysisView(analyses: analyses)
+                if !place.analyses.isEmpty {
+                    AnalysisView(analyses: place.analyses)
                 }
                 
                 Button("Segnala") {
