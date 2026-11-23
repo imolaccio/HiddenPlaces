@@ -165,6 +165,7 @@ struct AddPhotoView: View {
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var photoData: Data?
     @State private var isLoading = false
+    @State private var errorMessage: String?
     
     var body: some View {
         NavigationStack {
@@ -187,7 +188,13 @@ struct AddPhotoView: View {
                 }
                 
                 if isLoading {
-                    ProgressView()
+                    ProgressView("Caricamento...")
+                }
+                
+                if let errorMessage {
+                    Text(errorMessage)
+                        .foregroundStyle(.red)
+                        .font(.caption)
                 }
                 
                 Spacer()
@@ -219,10 +226,21 @@ struct AddPhotoView: View {
     func upload() async {
         guard let data = photoData else { return }
         isLoading = true
-        _ = try? await APIClient.shared.uploadPhoto(placeId: placeId, imageData: data)
+        errorMessage = nil
+        
+        do {
+            let url = try await APIClient.shared.uploadPhoto(placeId: placeId, imageData: data)
+            if url.isEmpty {
+                errorMessage = "Errore: URL vuoto"
+            } else {
+                onComplete()
+                dismiss()
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        
         isLoading = false
-        onComplete()
-        dismiss()
     }
 }
 
