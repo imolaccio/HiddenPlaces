@@ -6,12 +6,21 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                ScrollingTilesView(photos: photos)
+                Color.black.ignoresSafeArea()
+                
+                MultiLayerTiles(photos: photos)
                 
                 VStack {
+                    Text("HiddenPlaces")
+                        .font(.title)
+                        .bold()
+                        .foregroundStyle(.white)
+                        .padding(.top, 70)
+                        .shadow(radius: 8)
+                    
                     Spacer()
                     
-                    HStack(spacing: 16) {
+                    HStack(spacing: 10) {
                         NavigationLink {
                             HiddenPlacesMapView()
                         } label: {
@@ -33,11 +42,10 @@ struct HomeView: View {
                         }
                         .buttonStyle(.borderedProminent)
                     }
-                    .padding(.bottom, 50)
+                    .padding(.bottom, 40)
                 }
             }
-            .navigationTitle("HiddenPlaces")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarHidden(true)
             .task {
                 await loadPhotos()
             }
@@ -47,44 +55,49 @@ struct HomeView: View {
     func loadPhotos() async {
         do {
             let result = try await APIClient.shared.fetchPhotos()
-            photos = result.map { $0.url }
+            photos = result.isEmpty ? samplePhotos() : result.map { $0.url }
         } catch {
-            photos = [
-                "https://picsum.photos/400/300?1",
-                "https://picsum.photos/400/300?2",
-                "https://picsum.photos/400/300?3",
-                "https://picsum.photos/400/300?4"
-            ]
+            photos = samplePhotos()
         }
+    }
+    
+    func samplePhotos() -> [String] {
+        (1...15).map { "https://picsum.photos/400/300?\($0)" }
     }
 }
 
-struct ScrollingTilesView: View {
+struct MultiLayerTiles: View {
     let photos: [String]
     
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                ScrollingRow(photos: photos, speed: 25, direction: .right)
-                    .frame(height: 140)
-                    .offset(y: -geo.size.height * 0.25)
+                LayerRow(photos: photos, speed: 12, direction: .right, yOffset: -geo.size.height * 0.25, tileSize: CGSize(width: 90, height: 65))
+                    .opacity(0.65)
                 
-                ScrollingRow(photos: photos.reversed(), speed: 18, direction: .left)
-                    .frame(height: 140)
+                LayerRow(photos: photos.shuffled(), speed: 20, direction: .left, yOffset: -geo.size.height * 0.05, tileSize: CGSize(width: 140, height: 100))
+                    .opacity(0.8)
                 
-                ScrollingRow(photos: photos, speed: 12, direction: .right)
-                    .frame(height: 140)
-                    .offset(y: geo.size.height * 0.25)
+                LayerRow(photos: photos, speed: 28, direction: .right, yOffset: geo.size.height * 0.1, tileSize: CGSize(width: 180, height: 130))
+                
+                LayerRow(photos: photos.reversed(), speed: 16, direction: .left, yOffset: geo.size.height * 0.25, tileSize: CGSize(width: 110, height: 80))
+                    .opacity(0.85)
+                
+                LayerRow(photos: photos.shuffled(), speed: 10, direction: .right, yOffset: geo.size.height * 0.4, tileSize: CGSize(width: 100, height: 70))
+                    .opacity(0.7)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .ignoresSafeArea()
     }
 }
 
-struct ScrollingRow: View {
+struct LayerRow: View {
     let photos: [String]
     let speed: Double
     let direction: Direction
+    let yOffset: CGFloat
+    let tileSize: CGSize
     
     enum Direction { case left, right }
     
@@ -93,9 +106,9 @@ struct ScrollingRow: View {
             let t = timeline.date.timeIntervalSinceReferenceDate
             let offset = t * speed * (direction == .right ? 1 : -1)
             
-            HStack(spacing: 10) {
-                ForEach(0..<4, id: \.self) { _ in
-                    ForEach(photos, id: \.self) { url in
+            HStack(spacing: 6) {
+                ForEach(0..<8, id: \.self) { _ in
+                    ForEach(photos.prefix(5), id: \.self) { url in
                         AsyncImage(url: URL(string: url)) { phase in
                             switch phase {
                             case .success(let image):
@@ -103,15 +116,15 @@ struct ScrollingRow: View {
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
                             default:
-                                Color.gray.opacity(0.2)
+                                Color.gray.opacity(0.3)
                             }
                         }
-                        .frame(width: 160, height: 110)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .frame(width: tileSize.width, height: tileSize.height)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
             }
-            .offset(x: CGFloat(offset.truncatingRemainder(dividingBy: 1800)))
+            .offset(x: CGFloat(offset.truncatingRemainder(dividingBy: 2000)), y: yOffset)
         }
     }
 }
